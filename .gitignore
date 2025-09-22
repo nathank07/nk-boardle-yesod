@@ -1,0 +1,4 @@
+.stack-work/
+*~
+src/Database/*.db
+src/Database/*.csv
