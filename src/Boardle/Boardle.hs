@@ -1,6 +1,7 @@
 module Boardle.Boardle
     ( getSANMoves
     , getSANMoves'
+    , getGuesses
     ) where
 
 import Game.Chess
@@ -42,7 +43,7 @@ getGuesses'' = foldl replaceFirstYellow
 getGuesses :: [Guess] -> [Answer] -> [Guess]
 getGuesses guesses answers = getGuesses' (getGuesses'' guesses answers) answers
 
-getSANMoves :: Position -> [FEN] -> Maybe [SAN]
+getSANMoves :: Position -> [UCI] -> Maybe [SAN]
 getSANMoves pos uciMoves = fmap (reverse . snd) $ foldM step (pos, []) uciMoves
     where
         step (currPos, sanMoves) uci =
