@@ -40,7 +40,7 @@ getGuesses'' = foldl replaceFirstYellow
         replaceFirstYellow (g:gs) a = g : replaceFirstYellow gs a
 
 getGuesses :: [Guess] -> [Answer] -> [Guess]
-getGuesses guesses answers = getGuesses'' (getGuesses' guesses answers) answers
+getGuesses guesses answers = getGuesses' (getGuesses'' guesses answers) answers
 
 getSANMoves :: Position -> [FEN] -> Maybe [SAN]
 getSANMoves pos uciMoves = fmap (reverse . snd) $ foldM step (pos, []) uciMoves
