@@ -28,7 +28,7 @@ type Answer = String
 
 getGuesses :: [Guess] -> [Answer] -> Maybe [Guess]
 getGuesses guesses answers = 
-    if all (not . isUnknown) guesses || length guesses /= length answers
+    if any (not . isUnknown) guesses || length guesses /= length answers
         then Nothing
         else Just $ getGuesses' (getGuesses'' guesses answers) answers
     where 

@@ -39,3 +39,7 @@ spec = do
             getGuesses (guess "panda") (answer "axnax") `shouldBe` Just [Gray, Yellow, Green, Gray, Yellow]
         it "Correctly identifies two yellows (answer elder, guessing lever)" $ do 
             getGuesses (guess "lever") (answer "elder") `shouldBe` Just [Yellow, Yellow, Gray, Green, Green]
+        it "Fails when it's not all unknowns" $ do
+            getGuesses (Green : guess "xyzdc") (answer "acrisp") `shouldBe` Nothing
+            getGuesses (guess "xyzdc" ++ [Gray]) (answer "acrisp") `shouldBe` Nothing
+    --describe "Moves conversion" $ do
