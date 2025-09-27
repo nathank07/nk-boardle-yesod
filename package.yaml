@@ -27,6 +27,7 @@ dependencies:
 - vector
 - bytestring
 - containers
+- hspec
 
 ghc-options:
 - -Wall
