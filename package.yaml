@@ -28,6 +28,8 @@ dependencies:
 - bytestring
 - containers
 - hspec
+- postgresql-simple
+- network
 
 ghc-options:
 - -Wall

@@ -2,7 +2,7 @@ module Boardle.Boardle
     ( getSANMoves
     , getSANMoves'
     , getGuesses
-    , checkValidity
+    , checkValidityOfGame
     , Guess(Green, Yellow, Gray, Unknown)
     ) where
 
@@ -69,8 +69,8 @@ getUCIMove' pos sanMove =
         Left _ -> Nothing
         Right x -> Just $ toUCI x
 
-checkValidity :: FEN -> [SAN] -> Bool
-checkValidity fenStr sanMoves = 
+checkValidityOfGame :: FEN -> [SAN] -> Bool
+checkValidityOfGame fenStr sanMoves = 
     case (fromFEN fenStr) of 
         Nothing -> False
         Just pos -> isPos $ foldM step pos sanMoves

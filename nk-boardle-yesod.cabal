@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Boardle.Boardle
+      Database.DBConfig
       Database.LoadCsv
       Lib
       Types
@@ -43,6 +44,8 @@ library
     , chessIO
     , containers
     , hspec
+    , network
+    , postgresql-simple
     , text
     , vector
   default-language: Haskell2010
@@ -63,7 +66,9 @@ executable nk-boardle-yesod-exe
     , chessIO
     , containers
     , hspec
+    , network
     , nk-boardle-yesod
+    , postgresql-simple
     , text
     , vector
   default-language: Haskell2010
@@ -85,7 +90,9 @@ test-suite nk-boardle-yesod-test
     , chessIO
     , containers
     , hspec
+    , network
     , nk-boardle-yesod
+    , postgresql-simple
     , text
     , vector
   default-language: Haskell2010

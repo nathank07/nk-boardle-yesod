@@ -1,6 +1,6 @@
 import Test.Hspec
 import Boardle.Boardle
-    ( checkValidity,
+    ( checkValidityOfGame,
       getGuesses,
       Guess(..)
     )
@@ -21,11 +21,11 @@ spec :: Spec
 spec = do
     describe "Game validity" $ do
         it "Returns true for valid games" $ do
-            checkValidity startFEN ["e4", "d5", "exd5", "e5", "dxe6"] `shouldBe` True
+            checkValidityOfGame startFEN ["e4", "d5", "exd5", "e5", "dxe6"] `shouldBe` True
         it "Returns true for empty move list" $ do
-            checkValidity startFEN [] `shouldBe` True
+            checkValidityOfGame startFEN [] `shouldBe` True
         it "Returns false for invalid games" $ do
-            checkValidity startFEN ["e4", "e5", "e5"] `shouldBe` False
+            checkValidityOfGame startFEN ["e4", "e5", "e5"] `shouldBe` False
     describe "Wordle Guesses" $ do
         it "Correctly identifies correct all letters (answer panda, guessing panda)" $ do
             getGuesses (guess "panda") (answer "panda") `shouldBe` Just [Green, Green, Green, Green, Green]

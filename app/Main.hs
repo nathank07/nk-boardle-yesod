@@ -3,4 +3,4 @@ module Main (main) where
 import Database.LoadCsv
 
 main :: IO ()
-main = Database.LoadCsv.loadCsv
+main = Database.LoadCsv.loadCsvFileToPG "src/Database/lichess_db_puzzle.csv" 3 7
