@@ -15,13 +15,14 @@ type PuzzleID = String
 type Theme = String
 
 data Puzzle = Puzzle
-    { pPuzzleId :: String
-    , pFen :: String
-    , pSanSolution :: [String]
+    { pPuzzleId :: PuzzleID
+    , pFen :: FEN
+    , pSanSolution :: [SAN]
+    , pFirstMove :: SAN
     , pRating :: Int
     , pRatingDeviation :: Int
     , pPopularity :: Int
-    , pThemes :: [String]
+    , pThemes :: [Theme]
     } deriving (Show)
 
 getFullPuzzleById :: PuzzleID -> IO (Maybe Puzzle)
@@ -34,8 +35,9 @@ getFullPuzzleById pid = bracket (connect boardleDB) close $ \conn -> do
                 case getSANMoves' (FEN $ peFEN puzzle) (map UCI $ words $ peUCISolution puzzle) of
                     Just solution -> Just (Puzzle
                         (pePuzzleId puzzle)
-                        (peFEN puzzle)
-                        (map (\(SAN s) -> s) solution)
+                        (FEN $ peFEN puzzle)
+                        (tail solution)
+                        (head solution)
                         (peRating puzzle)
                         (peRatingDeviation puzzle)
                         (pePopularity puzzle)

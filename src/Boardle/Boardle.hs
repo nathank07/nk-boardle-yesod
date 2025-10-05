@@ -2,8 +2,10 @@ module Boardle.Boardle
     ( getSANMoves
     , getSANMoves'
     , getGuesses
+    , getUCIMove
     , checkValidityOfGame
-    , Guess(Green, Yellow, Gray, Unknown)
+    , Guess(Unknown)
+    , GuessResult(GreenResult, YellowResult, GrayResult)
     , FEN(..)
     , UCI(..)
     , SAN(..)
@@ -14,45 +16,53 @@ import Game.Chess
 import Game.Chess.SAN
 import Control.Monad (foldM)
 
-data Guess = Green
-           | Yellow
-           | MaybeYellow String
-           | Gray
-           | Unknown String
+data Guess a = Unknown a
     deriving (Eq, Show)
 
-isUnknown :: Guess -> Bool
-isUnknown (Unknown _) = True
-isUnknown _ = False
+data GuessResult = GreenResult
+                 | YellowResult  
+                 | GrayResult
+    deriving (Eq, Show)
+
+-- Internal helper type for processing
+data ProcessGuess a = ProcessGreen
+                    | ProcessYellow
+                    | ProcessMaybeYellow a
+                    | ProcessGray
+                    | ProcessUnknown a
+    deriving (Eq, Show)
+
 
 newtype FEN = FEN String deriving       (Eq, Show)
 newtype UCI = UCI String deriving       (Eq, Show)
 newtype SAN = SAN String deriving       (Eq, Show)
-newtype Answer = Answer String deriving (Eq, Show)
+newtype Answer a = Answer a deriving (Eq, Show)
 
-getGuesses :: [Guess] -> [Answer] -> Maybe [Guess]
+getGuesses :: Eq a => [Guess a] -> [Answer a] -> Maybe [GuessResult]
 getGuesses guesses answers = 
-    if any (not . isUnknown) guesses || length guesses /= length answers
+    if length guesses /= length answers
         then Nothing
         else Just $ getGuesses' 
-                    (getGuesses'' guesses (map (\(Answer a) -> a) answers)) 
+                    (getGuesses'' (map toProcessGuess guesses) (map (\(Answer a) -> a) answers)) 
                     (map (\(Answer a) -> a) answers)
     where 
+        toProcessGuess (Unknown a) = ProcessUnknown a
+        
         getGuesses' = zipWith f
             where 
-                f (Unknown a) b 
-                    | a == b = Green
-                    | otherwise = Gray
-                f (MaybeYellow a) b 
-                    | a == b = Green
-                    | otherwise = Yellow
-                f _ _ = Gray 
+                f (ProcessUnknown a) b 
+                    | a == b = GreenResult
+                    | otherwise = GrayResult
+                f (ProcessMaybeYellow a) b 
+                    | a == b = GreenResult
+                    | otherwise = YellowResult
+                f _ _ = GrayResult 
         getGuesses'' = foldl replaceFirstYellow 
             where 
                 replaceFirstYellow [] _ = []
-                replaceFirstYellow ((Unknown g):gs) a 
-                    | a == g = MaybeYellow g : gs
-                    | otherwise = (Unknown g) : replaceFirstYellow gs a
+                replaceFirstYellow ((ProcessUnknown g):gs) a 
+                    | a == g = ProcessMaybeYellow g : gs
+                    | otherwise = (ProcessUnknown g) : replaceFirstYellow gs a
                 replaceFirstYellow (g:gs) a = g : replaceFirstYellow gs a
 
 
