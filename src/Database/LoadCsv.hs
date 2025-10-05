@@ -13,7 +13,7 @@ import qualified Data.Vector as V
 import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.Types
 import Control.Exception (bracket)
-import Database.DBConfig (boardleDB)
+import Database.DBConfig (boardleDB, PuzzleEntry(..))
 
 data PuzzleRecord = PuzzleRecord
     { rePuzzleId :: !String
@@ -23,16 +23,6 @@ data PuzzleRecord = PuzzleRecord
     , reRatingDeviation :: !Int
     , rePopularity :: !Int
     , reThemes :: !String
-    } deriving (Show)
-
-data PuzzleEntry = PuzzleEntry
-    { pePuzzleId :: String
-    , peFEN :: String
-    , peUCISolution :: [String]
-    , peRating :: Int
-    , peRatingDeviation :: Int
-    , pePopularity :: Int
-    , peThemes :: [String]
     } deriving (Show)
 
 valueParse :: NamedRecord -> Parser PuzzleRecord
@@ -47,10 +37,16 @@ valueParse r = PuzzleRecord
 
 addEntry :: Connection -> PuzzleEntry -> IO ()
 addEntry conn (PuzzleEntry pid fen uci rating rdev pop themes) = do
-    let uciArr = PGArray uci
-    let themesArr = PGArray themes
-    _ <- execute conn "INSERT INTO Puzzles (id, fen, uci_solution, rating, rating_deviation, popularity, themes) VALUES (?,?,?,?,?,?,?)"
-        (pid, fen, uciArr, rating, rdev, pop, themesArr)
+    let q = "INSERT INTO Puzzles (id, fen, uci_solution, rating, rating_deviation, popularity) VALUES (?,?,?,?,?,?);"
+    _ <- execute conn q (pid, fen, uci, rating, rdev, pop)
+    mapM_ (\theme -> do
+        let tq = "INSERT INTO Themes (name) VALUES (?) ON CONFLICT (name) DO NOTHING;"
+        _ <- execute conn tq (Only theme)
+        let tq2 = "SELECT id FROM Themes WHERE name = ?;"
+        [Only themeId] <- query conn tq2 (Only theme) :: IO [Only Int]
+        let tq3 = "INSERT INTO Puzzle_Themes (puzzle_id, theme_id) VALUES (?,?);"
+        _ <- execute conn tq3 (pid, themeId)
+        return ()) themes
     return ()
 
 loadCsvFileToPG :: FilePath -> Int -> Int -> IO ()
@@ -64,7 +60,7 @@ loadCsvFileToPG csvFile minSquares maxSquares = do
                             addEntry conn (PuzzleEntry
                                 (rePuzzleId p)
                                 (reFEN p)
-                                (words $ reUCISolution p)
+                                (reUCISolution p)
                                 (reRating p)
                                 (reRatingDeviation p)
                                 (rePopularity p)

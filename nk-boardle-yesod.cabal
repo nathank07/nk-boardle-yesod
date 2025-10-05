@@ -27,6 +27,7 @@ library
   exposed-modules:
       Boardle.Boardle
       Database.DBConfig
+      Database.GetPuzzle
       Database.LoadCsv
       Lib
       Types
