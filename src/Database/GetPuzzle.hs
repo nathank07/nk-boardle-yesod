@@ -5,7 +5,7 @@ module Database.GetPuzzle where
 import Database.DBConfig (boardleDB, PuzzleEntry(..))
 import Database.PostgreSQL.Simple
 import Control.Exception (bracket)
-import Boardle.Boardle (getSANMoves')
+import Boardle.Boardle (getSANMoves', FEN(..), UCI(..), SAN(..))
 
 type PuzzleID = String
 type Theme = String
@@ -27,11 +27,11 @@ getFullPuzzleById pid = bracket (connect boardleDB) close $ \conn -> do
     let q' = map (\p -> p { peThemes = themes }) q
     return $ case q' of
             [puzzle] -> 
-                case getSANMoves' (peFEN puzzle) (words $ pePuzzleId puzzle) of
+                case getSANMoves' (FEN $ peFEN puzzle) (map UCI $ words $ pePuzzleId puzzle) of
                     Just solution -> Just (Puzzle
                         (pePuzzleId puzzle)
                         (peFEN puzzle)
-                        solution
+                        (map (\(SAN s) -> s) solution)
                         (peRating puzzle)
                         (peRatingDeviation puzzle)
                         (pePopularity puzzle)

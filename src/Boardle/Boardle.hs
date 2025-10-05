@@ -4,8 +4,10 @@ module Boardle.Boardle
     , getGuesses
     , checkValidityOfGame
     , Guess(Green, Yellow, Gray, Unknown)
-    , FEN
-    , SAN
+    , FEN(..)
+    , UCI(..)
+    , SAN(..)
+    , Answer(..)
     ) where
 
 import Game.Chess
@@ -23,16 +25,18 @@ isUnknown :: Guess -> Bool
 isUnknown (Unknown _) = True
 isUnknown _ = False
 
-type FEN = String
-type UCI = String
-type SAN = String
-type Answer = String
+newtype FEN = FEN String deriving       (Eq, Show)
+newtype UCI = UCI String deriving       (Eq, Show)
+newtype SAN = SAN String deriving       (Eq, Show)
+newtype Answer = Answer String deriving (Eq, Show)
 
 getGuesses :: [Guess] -> [Answer] -> Maybe [Guess]
 getGuesses guesses answers = 
     if any (not . isUnknown) guesses || length guesses /= length answers
         then Nothing
-        else Just $ getGuesses' (getGuesses'' guesses answers) answers
+        else Just $ getGuesses' 
+                    (getGuesses'' guesses (map (\(Answer a) -> a) answers)) 
+                    (map (\(Answer a) -> a) answers)
     where 
         getGuesses' = zipWith f
             where 
@@ -55,30 +59,30 @@ getGuesses guesses answers =
 getSANMoves :: Position -> [UCI] -> Maybe [SAN]
 getSANMoves pos uciMoves = fmap (reverse . snd) $ foldM step (pos, []) uciMoves
     where
-        step (currPos, sanMoves) uci =
-            (\p -> (unsafeDoPly currPos p, toSAN currPos p : sanMoves))
+        step (currPos, sanMoves) (UCI uci) =
+            (\p -> (unsafeDoPly currPos p, SAN (toSAN currPos p) : sanMoves))
                 <$> fromUCI currPos uci
 
 getSANMoves' :: FEN -> [UCI] -> Maybe [SAN]
-getSANMoves' fenStr uciMoves = (fromFEN fenStr) >>= (\pos -> getSANMoves pos uciMoves)
+getSANMoves' (FEN fenStr) uciMoves = (fromFEN fenStr) >>= (\pos -> getSANMoves pos uciMoves)
 
 getUCIMove :: FEN -> SAN -> Maybe UCI
-getUCIMove fenStr sanMove = (fromFEN fenStr) >>= (\pos -> getUCIMove' pos sanMove) 
+getUCIMove (FEN fenStr) sanMove = (fromFEN fenStr) >>= (\pos -> getUCIMove' pos sanMove) 
 
 getUCIMove' :: Position -> SAN -> Maybe UCI
-getUCIMove' pos sanMove = 
+getUCIMove' pos (SAN sanMove) = 
     case fromSAN pos sanMove of
         Left _ -> Nothing
-        Right x -> Just $ toUCI x
+        Right x -> Just $ UCI (toUCI x)
 
 checkValidityOfGame :: FEN -> [SAN] -> Bool
-checkValidityOfGame fenStr sanMoves = 
+checkValidityOfGame (FEN fenStr) sanMoves = 
     case (fromFEN fenStr) of 
         Nothing -> False
         Just pos -> isPos $ foldM step pos sanMoves
     where 
         step currPos san = do
-            uci <- getUCIMove' currPos san
+            (UCI uci) <- getUCIMove' currPos san
             ply <- fromUCI currPos uci
             return (unsafeDoPly currPos ply)
         isPos (Just _) = True
