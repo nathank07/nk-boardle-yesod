@@ -1,6 +1,8 @@
 module Main (main) where
 
-import Database.LoadCsv
+import Database.GetPuzzle (getFullPuzzleById)
 
 main :: IO ()
-main = Database.LoadCsv.loadCsvFileToPG "src/Database/lichess_db_puzzle.csv" 3 7
+main = do 
+    puzzle <- getFullPuzzleById "001XA"
+    putStrLn $ show puzzle

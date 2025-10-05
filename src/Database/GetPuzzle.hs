@@ -1,6 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Database.GetPuzzle where
+module Database.GetPuzzle 
+    ( getFullPuzzleById
+    , getPuzzleThemesByID
+    , Puzzle(..)
+    )where
 
 import Database.DBConfig (boardleDB, PuzzleEntry(..))
 import Database.PostgreSQL.Simple
@@ -18,7 +22,7 @@ data Puzzle = Puzzle
     , pRatingDeviation :: Int
     , pPopularity :: Int
     , pThemes :: [String]
-    }
+    } deriving (Show)
 
 getFullPuzzleById :: PuzzleID -> IO (Maybe Puzzle)
 getFullPuzzleById pid = bracket (connect boardleDB) close $ \conn -> do
@@ -27,7 +31,7 @@ getFullPuzzleById pid = bracket (connect boardleDB) close $ \conn -> do
     let q' = map (\p -> p { peThemes = themes }) q
     return $ case q' of
             [puzzle] -> 
-                case getSANMoves' (FEN $ peFEN puzzle) (map UCI $ words $ pePuzzleId puzzle) of
+                case getSANMoves' (FEN $ peFEN puzzle) (map UCI $ words $ peUCISolution puzzle) of
                     Just solution -> Just (Puzzle
                         (pePuzzleId puzzle)
                         (peFEN puzzle)
