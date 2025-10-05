@@ -8,7 +8,7 @@ module Database.DBConfig
     ) where
 
 import Database.PostgreSQL.Simple as PG
-import GHC.Generics (Generic)
+import Database.PostgreSQL.Simple.FromRow (fromRow, field)
 
 data PuzzleEntry = PuzzleEntry
     { pePuzzleId :: String
@@ -18,7 +18,17 @@ data PuzzleEntry = PuzzleEntry
     , peRatingDeviation :: Int
     , pePopularity :: Int
     , peThemes :: [String]
-    } deriving (Show, Generic)
+    } deriving (Show)
+
+instance FromRow PuzzleEntry where
+    fromRow = PuzzleEntry 
+                <$> field 
+                <*> field 
+                <*> field 
+                <*> field 
+                <*> field 
+                <*> field 
+                <*> pure []  -- Themes populated seperately 
 
 boardleDB :: PG.ConnectInfo
 boardleDB = PG.defaultConnectInfo

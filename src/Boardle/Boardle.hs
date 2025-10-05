@@ -4,6 +4,8 @@ module Boardle.Boardle
     , getGuesses
     , checkValidityOfGame
     , Guess(Green, Yellow, Gray, Unknown)
+    , FEN
+    , SAN
     ) where
 
 import Game.Chess

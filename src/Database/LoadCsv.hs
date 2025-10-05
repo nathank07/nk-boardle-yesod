@@ -11,7 +11,6 @@ import qualified Data.ByteString.Lazy as BL
 import Data.Csv
 import qualified Data.Vector as V
 import Database.PostgreSQL.Simple
-import Database.PostgreSQL.Simple.Types
 import Control.Exception (bracket)
 import Database.DBConfig (boardleDB, PuzzleEntry(..))
 
@@ -36,18 +35,28 @@ valueParse r = PuzzleRecord
     <*> r .: "Themes"
 
 addEntry :: Connection -> PuzzleEntry -> IO ()
-addEntry conn (PuzzleEntry pid fen uci rating rdev pop themes) = do
-    let q = "INSERT INTO Puzzles (id, fen, uci_solution, rating, rating_deviation, popularity) VALUES (?,?,?,?,?,?);"
+addEntry conn (PuzzleEntry pid fen uci rating rdev pop themes) =
+  withTransaction conn $ do
+    let q =
+          "INSERT INTO Puzzles \
+          \(id, fen, uci_solution, rating, rating_deviation, popularity) \
+          \VALUES (?,?,?,?,?,?);"
     _ <- execute conn q (pid, fen, uci, rating, rdev, pop)
-    mapM_ (\theme -> do
-        let tq = "INSERT INTO Themes (name) VALUES (?) ON CONFLICT (name) DO NOTHING;"
-        _ <- execute conn tq (Only theme)
-        let tq2 = "SELECT id FROM Themes WHERE name = ?;"
-        [Only themeId] <- query conn tq2 (Only theme) :: IO [Only Int]
-        let tq3 = "INSERT INTO Puzzle_Themes (puzzle_id, theme_id) VALUES (?,?);"
-        _ <- execute conn tq3 (pid, themeId)
-        return ()) themes
+
+    themeIds <- mapM (\theme -> do
+      let tq =
+            "INSERT INTO Themes (name) \
+            \VALUES (?) \
+            \ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name \
+            \RETURNING id;"
+      [Only tid] <- query conn tq (Only theme) :: IO [Only Int]
+      return tid) themes
+
+    let tq3 = "INSERT INTO Puzzle_Themes (puzzle_id, theme_id) VALUES (?,?)"
+    _ <- executeMany conn tq3 [(pid, tid) | tid <- themeIds]
+
     return ()
+
 
 loadCsvFileToPG :: FilePath -> Int -> Int -> IO ()
 loadCsvFileToPG csvFile minSquares maxSquares = do

@@ -5,13 +5,45 @@ module Database.GetPuzzle where
 import Database.DBConfig (boardleDB, PuzzleEntry(..))
 import Database.PostgreSQL.Simple
 import Control.Exception (bracket)
+import Boardle.Boardle (getSANMoves')
 
 type PuzzleID = String
+type Theme = String
 
+data Puzzle = Puzzle
+    { pPuzzleId :: String
+    , pFen :: String
+    , pSanSolution :: [String]
+    , pRating :: Int
+    , pRatingDeviation :: Int
+    , pPopularity :: Int
+    , pThemes :: [String]
+    }
 
--- getFullPuzzleById :: PuzzleID -> IO (Maybe PuzzleEntry)
--- getFullPuzzleById pid = bracket (connect boardleDB) close $ \conn -> do
---     q <- query conn "SELECT * FROM Puzzles WHERE id = (?)" (Only pid) :: IO [PuzzleEntry]
---     return $ case q of
---             [puzzle] -> Just puzzle
---             _ -> Nothing
+getFullPuzzleById :: PuzzleID -> IO (Maybe Puzzle)
+getFullPuzzleById pid = bracket (connect boardleDB) close $ \conn -> do
+    q <- query conn "SELECT * FROM Puzzles WHERE id = (?)" (Only pid) :: IO [PuzzleEntry]
+    themes <- getPuzzleThemesByID pid
+    let q' = map (\p -> p { peThemes = themes }) q
+    return $ case q' of
+            [puzzle] -> 
+                case getSANMoves' (peFEN puzzle) (words $ pePuzzleId puzzle) of
+                    Just solution -> Just (Puzzle
+                        (pePuzzleId puzzle)
+                        (peFEN puzzle)
+                        solution
+                        (peRating puzzle)
+                        (peRatingDeviation puzzle)
+                        (pePopularity puzzle)
+                        (peThemes puzzle))
+                    Nothing -> Nothing
+            _ -> Nothing
+
+getPuzzleThemesByID :: PuzzleID -> IO [Theme]
+getPuzzleThemesByID pid = bracket (connect boardleDB) close $ \conn -> do
+    q <- query conn "SELECT T.name \
+                    \FROM Themes T \
+                    \JOIN Puzzle_Themes PT \
+                    \ON T.id = PT.theme_id \
+                    \WHERE PT.puzzle_id = (?)" (Only pid) :: IO [Only Theme]
+    return (map fromOnly q)
