@@ -13,8 +13,8 @@ packages:
     hackage: chessIO-0.9.3.1@sha256:d66a556533fb2b64f2c6d2fe1886e6b80a8da2cc4ba86f303b61f8161c63d96c,5044
 snapshots:
 - completed:
-    sha256: 057c5a66404132b661211de21bb4490f6df89c162752a17f0df5a0959381b869
-    size: 726309
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/24/10.yaml
+    sha256: 5a59b2a405b3aba3c00188453be172b85893cab8ebc352b1ef58b0eae5d248a2
+    size: 650475
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/26.yaml
   original:
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/24/10.yaml
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/26.yaml

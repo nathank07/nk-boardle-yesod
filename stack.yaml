@@ -2,15 +2,15 @@
 #
 # Some commonly used options have been documented as comments in this file.
 # For advanced use and comprehensive documentation of the format, please see:
-# https://docs.haskellstack.org/en/stable/yaml_configuration/
+# https://docs.haskellstack.org/en/stable/configure/yaml/
 
 # A 'specific' Stackage snapshot or a compiler version.
 # A snapshot resolver dictates the compiler version and the set of packages
 # to be used for project dependencies. For example:
 #
-# snapshot: lts-22.28
-# snapshot: nightly-2024-07-05
-# snapshot: ghc-9.6.6
+# snapshot: lts-23.24
+# snapshot: nightly-2025-06-15
+# snapshot: ghc-9.8.4
 #
 # The location of a snapshot can be provided as a file or url. Stack assumes
 # a snapshot provided as a file might change, whereas a url resource does not.
@@ -18,7 +18,7 @@
 # snapshot: ./custom-snapshot.yaml
 # snapshot: https://example.com/snapshots/2024-01-01.yaml
 snapshot:
-  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/24/10.yaml
+  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/26.yaml
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -39,7 +39,6 @@ packages:
 # - acme-missiles-0.3
 # - git: https://github.com/commercialhaskell/stack.git
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
-#
 extra-deps: 
 - chessIO-0.9.3.1@sha256:d66a556533fb2b64f2c6d2fe1886e6b80a8da2cc4ba86f303b61f8161c63d96c,5044
 
@@ -54,7 +53,7 @@ extra-deps:
 #
 # Require a specific version of Stack, using version ranges
 # require-stack-version: -any # Default
-# require-stack-version: ">=3.1"
+# require-stack-version: ">=3.7"
 #
 # Override the architecture used by Stack, especially useful on Windows
 # arch: i386
