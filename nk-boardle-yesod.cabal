@@ -29,6 +29,7 @@ library
       Database.DBConfig
       Database.GetPuzzle
       Database.LoadCsv
+      Handler.Puzzles
       Lib
       Types
   other-modules:

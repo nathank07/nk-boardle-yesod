@@ -1,0 +1,1 @@
+module Handler.Puzzles where

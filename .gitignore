@@ -2,3 +2,4 @@
 *~
 src/Database/*.db
 src/Database/*.csv
+*.aes
