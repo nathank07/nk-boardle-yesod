@@ -89,37 +89,6 @@ getPuzzleThemesByID (PuzzleID pid) = bracket (connect boardleDB) close $ \conn -
                     \WHERE PT.puzzle_id = (?)" (Only pid) :: IO [Only String]
     return (map (Theme . fromOnly) q)
 
--- getRandomPuzzleID :: PuzzleSearch -> IO (Maybe PuzzleID)
--- getRandomPuzzleID (PuzzleSearch lowRating highRating lowSquares highSquares themes) =
---     bracket (connect boardleDB) close $ \conn -> do
---         r <- randomRIO (0.0, 1.0) :: IO Double
---         let baseQuery = "SELECT P.id FROM Puzzles P"
---             whereClause = "WHERE P.rating BETWEEN ? AND ?"
---             themeJoin = if null themes
---                 then ""
---                 else " JOIN Puzzle_Themes PT ON P.id = PT.puzzle_id JOIN Themes T ON PT.theme_id = T.id"
---             themeFilter = if null themes
---                 then ""
---                 else " AND T.name IN (" ++ intercalate "," (map (const "?") themes) ++ ")"
---             squareFilter = if lowSquares < highSquares
---                 then " AND LENGTH(P.uci_solution) - LENGTH(REPLACE(P.uci_solution, ' ', '')) BETWEEN ? AND ?"
---                 else ""
---             orderLimit = " ORDER BY abs(P.random_val - ?) LIMIT 1"
-            
---             sql = baseQuery ++ themeJoin ++ " " ++ whereClause ++ themeFilter ++ squareFilter ++ orderLimit
-            
---             baseParams = [show lowRating, show highRating]
---             themeParams = if null themes then [] else map (\(Theme t) -> t) themes
---             squareParams = if lowSquares < highSquares then [show lowSquares, show highSquares] else []
---             randomParam = [show r]
-
---             allParams :: [String]
---             allParams = baseParams ++ themeParams ++ squareParams ++ randomParam
-
---         q <- query conn (fromString sql) allParams :: IO [Only String]
---         return $ case q of
---             [Only pid] -> Just (PuzzleID pid)
---             _ -> Nothing
 
 getRandomPuzzleID :: PuzzleSearch -> IO (Maybe PuzzleID)
 getRandomPuzzleID (PuzzleSearch lowRating highRating ratingDeviation lowSquares highSquares themes) =
@@ -154,14 +123,11 @@ getRandomPuzzleID (PuzzleSearch lowRating highRating ratingDeviation lowSquares 
 
             allParams = baseParams ++ themeParams ++ squareParams ++ [show r]
 
-        -- Step 1: query >= r
-        qGE <- query conn (fromString sqlGE) allParams :: IO [(String, Double)]
+        q1 <- query conn (fromString sqlGE) allParams :: IO [(String, Double)]
+        -- wrap-around if no results found
+        q2 <- query conn (fromString sqlLT) allParams :: IO [(String, Double)]
 
-        -- Step 2: query < r
-        qLT <- query conn (fromString sqlLT) allParams :: IO [(String, Double)]
-
-        -- Step 3: pick first available candidate
-        case (qGE, qLT) of
+        case (q1, q2) of
             ([], [])    -> return Nothing
             (x:_, _)    -> return $ Just (PuzzleID $ fst x)
             ([], y:_)   -> return $ Just (PuzzleID $ fst y)
