@@ -19,3 +19,7 @@ CREATE TABLE IF NOT EXISTS Puzzle_Themes
     theme_id INTEGER REFERENCES Themes(id),
     PRIMARY KEY (puzzle_id, theme_id)
 );
+
+-- To increase query performance for random puzzle selection
+ALTER TABLE Puzzles ADD COLUMN random_val float DEFAULT random();
+CREATE INDEX idx_puzzles_random_val ON Puzzles(random_val);

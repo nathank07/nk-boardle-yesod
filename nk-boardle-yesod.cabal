@@ -39,6 +39,7 @@ library
       Handler.Comment
       Handler.Common
       Handler.Home
+      Handler.Puzzle
       Import
       Import.NoFoundation
       Settings
@@ -74,6 +75,7 @@ library
     , monad-logger ==0.3.*
     , network
     , postgresql-simple
+    , random
     , safe
     , shakespeare ==2.0.*
     , template-haskell
@@ -135,6 +137,7 @@ executable nk-boardle-yesod-exe
     , network
     , nk-boardle-yesod
     , postgresql-simple
+    , random
     , safe
     , shakespeare ==2.0.*
     , template-haskell
@@ -194,6 +197,7 @@ test-suite boardle-test
     , network
     , nk-boardle-yesod
     , postgresql-simple
+    , random
     , safe
     , shakespeare ==2.0.*
     , template-haskell

@@ -2,6 +2,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE DataKinds #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use when" #-}
 
 module Database.LoadCsv
     ( loadCsvFileToPG
@@ -58,7 +60,10 @@ addEntry conn (PuzzleEntry pid fen uci rating rdev pop themes) =
     return ()
 
 
-loadCsvFileToPG :: FilePath -> Int -> Int -> IO ()
+type LowestSquares = Int
+type HighestSquares = Int
+
+loadCsvFileToPG :: FilePath -> LowestSquares -> HighestSquares -> IO ()
 loadCsvFileToPG csvFile minSquares maxSquares = do
     csvData <- BL.readFile csvFile
     case decodeByNameWithP valueParse defaultDecodeOptions csvData of
@@ -66,15 +71,15 @@ loadCsvFileToPG csvFile minSquares maxSquares = do
         Right (_, v) -> V.forM_ v $ \ p ->
             if squares p >= minSquares && squares p <= maxSquares
                 then bracket (connect boardleDB) close $ \conn -> 
-                            addEntry conn (PuzzleEntry
-                                (rePuzzleId p)
-                                (reFEN p)
-                                (reUCISolution p)
-                                (reRating p)
-                                (reRatingDeviation p)
-                                (rePopularity p)
-                                (words $ reThemes p))
+                    addEntry conn (PuzzleEntry
+                        (rePuzzleId p)
+                        (reFEN p)
+                        (reUCISolution p)
+                        (reRating p)
+                        (reRatingDeviation p)
+                        (rePopularity p)
+                        (words $ reThemes p))
                 else return ()
     putStrLn "Done inserting puzzles"
     where
-        squares p = length $ filter (== ' ') (reFEN p)
+        squares p = length $ filter (== ' ') (reUCISolution p)

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 module Boardle.Boardle
     ( getSANMoves
     , getSANMoves'
@@ -15,8 +16,10 @@ module Boardle.Boardle
 import Game.Chess
 import Game.Chess.SAN
 import Control.Monad (foldM)
+import ClassyPrelude.Yesod (ToJSON)
+import GHC.Generics (Generic)
 
-data Guess a = Unknown a
+newtype Guess a = Unknown a
     deriving (Eq, Show)
 
 data GuessResult = GreenResult
@@ -32,11 +35,14 @@ data ProcessGuess a = ProcessGreen
                     | ProcessUnknown a
     deriving (Eq, Show)
 
-
-newtype FEN = FEN String deriving       (Eq, Show)
-newtype UCI = UCI String deriving       (Eq, Show)
-newtype SAN = SAN String deriving       (Eq, Show)
+newtype FEN = FEN String deriving    (Eq, Show, Generic)
+newtype UCI = UCI String deriving    (Eq, Show, Generic)
+newtype SAN = SAN String deriving    (Eq, Show, Generic)
 newtype Answer a = Answer a deriving (Eq, Show)
+
+instance ToJSON FEN
+instance ToJSON UCI
+instance ToJSON SAN
 
 getGuesses :: Eq a => [Guess a] -> [Answer a] -> Maybe [GuessResult]
 getGuesses guesses answers =
