@@ -12,4 +12,4 @@
 
 /puzzle/#Text PuzzleIdR GET
 
-/puzzle RandomPuzzleR GET
+/new-puzzle RandomPuzzleR GET

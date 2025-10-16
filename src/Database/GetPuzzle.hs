@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 
-module Database.GetPuzzle 
+module Database.GetPuzzle
     ( getFullPuzzleById
     , getPuzzleThemesByID
     , getRandomPuzzleID
@@ -21,6 +21,7 @@ import Boardle.Boardle (getSANMoves', FEN(..), UCI(..), SAN(..))
 import GHC.Generics (Generic)
 import ClassyPrelude.Yesod (ToJSON, intercalate)
 import Data.String (fromString)
+import ClassyPrelude (fromMaybe)
 
 
 newtype PuzzleID = PuzzleID String deriving (Show, Generic)
@@ -64,10 +65,10 @@ getFullPuzzleById (PuzzleID pid) = bracket (connect boardleDB) close $ \conn -> 
     q <- query conn "SELECT id, fen, uci_solution, rating, rating_deviation, popularity \
                     \FROM Puzzles WHERE id = (?)" (Only pid) :: IO [PuzzleEntry]
     themes <- getPuzzleThemesByID (PuzzleID pid)
-    let themeStrings = map (\(Theme t) -> t) themes
+    let themeStrings = maybe [] (map (\(Theme t) -> t)) themes
         q' = map (\p -> p { peThemes = themeStrings }) q
     return $ case q' of
-            [puzzle] -> 
+            [puzzle] ->
                 case getSANMoves' (FEN $ peFEN puzzle) (UCI <$> words (peUCISolution puzzle)) of
                     Just solution -> Just (Puzzle
                         (PuzzleID $ pePuzzleId puzzle)
@@ -80,14 +81,16 @@ getFullPuzzleById (PuzzleID pid) = bracket (connect boardleDB) close $ \conn -> 
                     Nothing -> Nothing
             _ -> Nothing
 
-getPuzzleThemesByID :: PuzzleID -> IO [Theme]
+getPuzzleThemesByID :: PuzzleID -> IO (Maybe [Theme])
 getPuzzleThemesByID (PuzzleID pid) = bracket (connect boardleDB) close $ \conn -> do
     q <- query conn "SELECT T.name \
                     \FROM Themes T \
                     \JOIN Puzzle_Themes PT \
                     \ON T.id = PT.theme_id \
                     \WHERE PT.puzzle_id = (?)" (Only pid) :: IO [Only String]
-    return (map (Theme . fromOnly) q)
+    return $ case q of
+        [] -> Nothing
+        _  -> Just (map (Theme . fromOnly) q)
 
 
 getRandomPuzzleID :: PuzzleSearch -> IO (Maybe PuzzleID)
@@ -118,7 +121,7 @@ getRandomPuzzleID (PuzzleSearch lowRating highRating ratingDeviation lowSquares 
 
             themeParams = if null themes then [] else map (\(Theme t) -> t) themes
 
-            squareParams = if lowSquares <= highSquares 
+            squareParams = if lowSquares <= highSquares
                            then [show lowSquares, show highSquares] else []
 
             allParams = baseParams ++ themeParams ++ squareParams ++ [show r]
@@ -146,7 +149,7 @@ getRandomPuzzleID' = bracket (connect boardleDB) close $ \conn -> do
             "SELECT id, random_val FROM Puzzles WHERE random_val < ? ORDER BY random_val DESC LIMIT 1"
             (Only r) :: IO [(String, Double)]
 
-    case (q1, q2) of 
+    case (q1, q2) of
         ([], []) -> return Nothing
         (x:_, _) -> return $ Just (PuzzleID $ fst x)
         ([], y:_) -> return $ Just (PuzzleID $ fst y)

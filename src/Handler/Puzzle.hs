@@ -12,12 +12,32 @@ import Database.GetPuzzle
 
 getPuzzleIdR :: Text -> Handler Value
 getPuzzleIdR puzzleId = do
-    mpuzzle <- liftIO $ getFullPuzzleById (PuzzleID $ unpack puzzleId)
+    mpuzzle <- liftIO $ getFullPuzzleById (PuzzleID $ Import.unpack puzzleId)
     maybe notFound returnJson mpuzzle
+
 
 getRandomPuzzleR :: Handler Value
 getRandomPuzzleR = do
-    mpuzzleId <- liftIO $ getRandomPuzzleID (PuzzleSearch 1500 1600 100 5 5 [])
+    params <- reqGetParams <$> getRequest
+    let allowedParams = ["low_rating", "high_rating", "max_deviation", "min_squares", "max_squares"]
+    let invalidParams = filter (\(name, _) -> name `notElem` allowedParams) params
+    unless (null invalidParams) $ sendResponseStatus badRequest400 ("Invalid parameters" :: Text)
+    
+    lowRating    <- fromMaybe 0    <$> runInputGet (iopt intField "low_rating")
+    highRating   <- fromMaybe 4000 <$> runInputGet (iopt intField "high_rating")
+    maxDeviation <- fromMaybe 200  <$> runInputGet (iopt intField "max_deviation")
+    minSquares   <- fromMaybe 3    <$> runInputGet (iopt intField "min_squares")
+    maxSquares   <- fromMaybe 7    <$> runInputGet (iopt intField "max_squares")
+
+    mpuzzleId <- liftIO $ getRandomPuzzleID
+        (PuzzleSearch
+            { psMinRating = lowRating
+            , psMaxRating = highRating
+            , psMaxRatingDeviation = maxDeviation
+            , psMinSquares = minSquares
+            , psMaxSquares = maxSquares
+            , psThemes = []
+            })
     case mpuzzleId of
         Nothing -> notFound
         Just pid -> do
