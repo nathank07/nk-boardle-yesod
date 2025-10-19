@@ -4,26 +4,15 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Handler.Puzzle where
 
 import Import
 import System.Random (randomRIO)
 import Model
-
-
--- Comment
---    entry EntryId
---    posted UTCTime
---    user UserId
---    name Text
---    text Textarea
--- |]
-
--- Entry
---    title Text
---    posted UTCTime
---    content Html
+import Boardle.Boardle
+import qualified Database.Esqueleto as E 
 
 getPuzzleIdR :: Text -> Handler Value
 getPuzzleIdR puzzleId = do
@@ -39,20 +28,25 @@ getPuzzleIdR puzzleId = do
                             Nothing -> return ""
                             Just theme -> return (themeName theme)
 
-            returnJson $ object
-                ["puzzleId" .= puzzleId,
-                 "fen" .= fen,
-                 "firstMove" .= firstMove,
-                 "solution" .= words solution,
-                 "rating" .= rating,
-                 "ratingDeviation" .= ratingDev,
-                 "popularity" .= pop,
-                 "themes" .= themes]
+            let sanMoves = getSANMoves' (FEN fen) (UCI <$> (firstMove : words solution))
+
+            case sanMoves of
+                Just (_:moves) -> returnJson $ object
+                    ["puzzleId" .= puzzleId,
+                     "fen" .= fen,
+                     "firstMove" .= firstMove,
+                     "solution" .= moves,
+                     "rating" .= rating,
+                     "ratingDeviation" .= ratingDev,
+                     "popularity" .= pop,
+                     "themes" .= themes]
+                _ -> notFound
+
 
 getRandomPuzzleR :: Handler Value
 getRandomPuzzleR = do
     params <- reqGetParams <$> getRequest
-    let allowedParams = ["low_rating", "high_rating", "max_deviation", "min_squares", "max_squares"]
+    let allowedParams = ["low_rating", "high_rating", "max_deviation", "min_squares", "max_squares", "themes"]
     let invalidParams = filter (\(name, _) -> name `notElem` allowedParams) params
     unless (null invalidParams) $ sendResponseStatus badRequest400 ("Invalid parameters" :: Text)
 
@@ -61,9 +55,10 @@ getRandomPuzzleR = do
     maxDeviation <- fromMaybe 200  <$> runInputGet (iopt intField "max_deviation")
     minSquares   <- fromMaybe 3    <$> runInputGet (iopt intField "min_squares")
     maxSquares   <- fromMaybe 7    <$> runInputGet (iopt intField "max_squares")
-
+    themes       <- fromMaybe ""   <$> runInputGet (iopt textField "themes")
+    
     r <- liftIO (randomRIO (0.0, 1.0) :: IO Double)
-      
+    
     mpuzzle <- runDB $ selectFirst 
         [ PuzzleRating >=. lowRating
         , PuzzleRating <=. highRating  
@@ -92,31 +87,3 @@ getRandomPuzzleR = do
         Just (Entity puzzleKey _) -> do
             let (PuzzleKey puzzleId) = puzzleKey
             getPuzzleIdR puzzleId
-
--- getRandomPuzzleR :: Handler Value
--- getRandomPuzzleR = do
---     params <- reqGetParams <$> getRequest
---     let allowedParams = ["low_rating", "high_rating", "max_deviation", "min_squares", "max_squares"]
---     let invalidParams = filter (\(name, _) -> name `notElem` allowedParams) params
---     unless (null invalidParams) $ sendResponseStatus badRequest400 ("Invalid parameters" :: Text)
-
---     lowRating    <- fromMaybe 0    <$> runInputGet (iopt intField "low_rating")
---     highRating   <- fromMaybe 4000 <$> runInputGet (iopt intField "high_rating")
---     maxDeviation <- fromMaybe 200  <$> runInputGet (iopt intField "max_deviation")
---     minSquares   <- fromMaybe 3    <$> runInputGet (iopt intField "min_squares")
---     maxSquares   <- fromMaybe 7    <$> runInputGet (iopt intField "max_squares")
-
---     mpuzzleId <- liftIO $ getRandomPuzzleID
---         (PuzzleSearch
---             { psMinRating = lowRating
---             , psMaxRating = highRating
---             , psMaxRatingDeviation = maxDeviation
---             , psMinSquares = minSquares
---             , psMaxSquares = maxSquares
---             , psThemes = []
---             })
---     case mpuzzleId of
---         Nothing -> notFound
---         Just pid -> do
---             mpuzzle <- liftIO $ getFullPuzzleById pid
---             maybe notFound returnJson mpuzzle

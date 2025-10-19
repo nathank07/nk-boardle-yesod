@@ -15,9 +15,9 @@ module Boardle.Boardle
 
 import Game.Chess
 import Game.Chess.SAN
-import Control.Monad (foldM)
-import ClassyPrelude.Yesod (ToJSON)
+import ClassyPrelude.Yesod 
 import GHC.Generics (Generic)
+import Prelude (foldl)
 
 newtype Guess a = Unknown a
     deriving (Eq, Show)
@@ -35,9 +35,9 @@ data ProcessGuess a = ProcessGreen
                     | ProcessUnknown a
     deriving (Eq, Show)
 
-newtype FEN = FEN String deriving    (Eq, Show, Generic)
-newtype UCI = UCI String deriving    (Eq, Show, Generic)
-newtype SAN = SAN String deriving    (Eq, Show, Generic)
+newtype FEN = FEN Text deriving    (Eq, Show, Generic)
+newtype UCI = UCI Text deriving    (Eq, Show, Generic)
+newtype SAN = SAN Text deriving    (Eq, Show, Generic)
 newtype Answer a = Answer a deriving (Eq, Show)
 
 instance ToJSON FEN
@@ -73,33 +73,33 @@ getGuesses guesses answers =
 
 
 getSANMoves :: Position -> [UCI] -> Maybe [SAN]
-getSANMoves pos uciMoves = reverse . snd <$> foldM step (pos, []) uciMoves
+getSANMoves pos uciMoves = reverse . snd <$> ClassyPrelude.Yesod.foldM step (pos, []) uciMoves
     where
         step (currPos, sanMoves) (UCI uci) =
             (\p -> (unsafeDoPly currPos p, SAN (toSAN currPos p) : sanMoves))
-                <$> fromUCI currPos uci
+                <$> fromUCI currPos (unpack uci)
 
 getSANMoves' :: FEN -> [UCI] -> Maybe [SAN]
-getSANMoves' (FEN fenStr) uciMoves = fromFEN fenStr >>= (`getSANMoves` uciMoves)
+getSANMoves' (FEN fenStr) uciMoves = fromFEN (unpack fenStr) >>= (`getSANMoves` uciMoves)
 
 getUCIMove :: FEN -> SAN -> Maybe UCI
-getUCIMove (FEN fenStr) sanMove = fromFEN fenStr >>= (`getUCIMove'` sanMove)
+getUCIMove (FEN fenStr) sanMove = fromFEN (unpack fenStr) >>= (`getUCIMove'` sanMove)
 
 getUCIMove' :: Position -> SAN -> Maybe UCI
 getUCIMove' pos (SAN sanMove) =
     case fromSAN pos sanMove of
         Left _ -> Nothing
-        Right x -> Just $ UCI (toUCI x)
+        Right x -> Just $ UCI (pack $ toUCI x)
 
 checkValidityOfGame :: FEN -> [SAN] -> Bool
 checkValidityOfGame (FEN fenStr) sanMoves =
-    case fromFEN fenStr of
+    case fromFEN $ unpack fenStr of
         Nothing -> False
-        Just pos -> isPos $ foldM step pos sanMoves
+        Just pos -> isPos $ ClassyPrelude.Yesod.foldM step pos sanMoves
     where
         step currPos san = do
             (UCI uci) <- getUCIMove' currPos san
-            ply <- fromUCI currPos uci
+            ply <- fromUCI currPos $ unpack uci
             return (unsafeDoPly currPos ply)
         isPos (Just _) = True
         isPos Nothing = False
