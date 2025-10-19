@@ -1,0 +1,25 @@
+-- By default this file is used by `persistFileWith` in Model.hs (which is imported by Foundation.hs)
+-- Syntax for this file here: https://github.com/yesodweb/persistent/blob/master/docs/Persistent-entity-syntax.md
+
+Puzzle json
+    Id Text
+    fen Text
+    uciFirstMove Text
+    uciSolution Text
+    uciSolutionSquares Int Maybe default=NULL -- Computed field based on uciSolution
+    rating Int
+    ratingDeviation Int
+    popularity Int
+    randomVal Double Maybe default=NULL -- Field to improve random selection performance
+    deriving Show
+
+Theme
+    name Text
+    UniqueTheme name
+    deriving Show
+
+PuzzleTheme
+    puzzleId PuzzleId
+    themeId ThemeId
+    Primary puzzleId themeId
+    deriving Generic

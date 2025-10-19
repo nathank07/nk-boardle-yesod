@@ -19,7 +19,6 @@ cabal.sandbox.config
 *.keter
 *~
 \#*
-src/Database/*.db
-src/Database/*.csv
+*.csv
 *.aes
 app/TestStuff.hs

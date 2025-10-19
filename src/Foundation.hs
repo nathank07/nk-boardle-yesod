@@ -4,17 +4,25 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ExplicitForAll #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE InstanceSigs #-}
 
 module Foundation where
 
 import Import.NoFoundation
-import Control.Monad.Logger        (LogSource)
-import Text.Hamlet                 (hamletFile)
-import Text.Jasmine                (minifym)
-import Yesod.Core.Types            (Logger)
-import Yesod.Default.Util          (addStaticContentExternal)
 import Data.Kind            (Type)
+import Database.Persist.Sql (ConnectionPool, runSqlPool)
+import Text.Hamlet          (hamletFile)
+import Text.Jasmine         (minifym)
+import Control.Monad.Logger (LogSource)
+
+-- Used only when in "auth-dummy-login" setting is enabled.
+import Yesod.Auth.Dummy
+
+import Yesod.Auth.OpenId    (authOpenId, IdentifierType (Claimed))
+import Yesod.Default.Util   (addStaticContentExternal)
+import Yesod.Core.Types     (Logger)
 import qualified Yesod.Core.Unsafe as Unsafe
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
@@ -26,6 +34,7 @@ import qualified Data.Text.Encoding as TE
 data App = App
     { appSettings    :: AppSettings
     , appStatic      :: Static -- ^ Settings for static file serving.
+    , appConnPool    :: ConnectionPool -- ^ Database connection pool.
     , appHttpManager :: Manager
     , appLogger      :: Logger
     }
@@ -56,6 +65,10 @@ mkYesodData "App" $(parseRoutesFile "config/routes.yesodroutes")
 
 -- | A convenient synonym for creating forms.
 type Form x = Html -> MForm (HandlerFor App) (FormResult x, Widget)
+
+-- | A convenient synonym for database access functions.
+type DB a = forall (m :: Type -> Type).
+    (MonadUnliftIO m) => ReaderT SqlBackend m a
 
 -- Please see the documentation for the Yesod typeclass. There are a number
 -- of settings which can be configured by overriding methods here.
@@ -126,11 +139,15 @@ instance Yesod App where
         :: Route App  -- ^ The route the user is visiting.
         -> Bool       -- ^ Whether or not this is a "write" request.
         -> Handler AuthResult
-    -- Routes not requiring authenitcation.
+    -- Routes not requiring authentication.
+    isAuthorized CommentR _ = return Authorized
+    isAuthorized HomeR _ = return Authorized
     isAuthorized FaviconR _ = return Authorized
     isAuthorized RobotsR _ = return Authorized
-    -- Default to Authorized for now.
-    isAuthorized _ _ = return Authorized
+    isAuthorized (StaticR _) _ = return Authorized
+
+    -- the profile route requires that the user is authenticated, so we
+    -- delegate to that function
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
@@ -178,6 +195,18 @@ instance YesodBreadcrumbs App where
         -> Handler (Text, Maybe (Route App))
     breadcrumb HomeR = return ("Home", Nothing)
     breadcrumb  _ = return ("home", Nothing)
+
+-- How to run database actions.
+instance YesodPersist App where
+    type YesodPersistBackend App = SqlBackend
+    runDB :: SqlPersistT Handler a -> Handler a
+    runDB action = do
+        master <- getYesod
+        runSqlPool action $ appConnPool master
+
+instance YesodPersistRunner App where
+    getDBRunner :: Handler (DBRunner App, Handler ())
+    getDBRunner = defaultGetDBRunner appConnPool
 
 -- This instance is required to use forms. You can modify renderMessage to
 -- achieve customized and internationalized form validation messages.

@@ -32,9 +32,6 @@ library
   exposed-modules:
       Application
       Boardle.Boardle
-      Database.DBConfig
-      Database.GetPuzzle
-      Database.LoadCsv
       Foundation
       Handler.Comment
       Handler.Common
@@ -42,6 +39,7 @@ library
       Handler.Puzzle
       Import
       Import.NoFoundation
+      Model
       Settings
       Settings.StaticFiles
   other-modules:
@@ -74,6 +72,9 @@ library
     , monad-control >=0.3 && <1.1
     , monad-logger ==0.3.*
     , network
+    , persistent >=2.9 && <2.14
+    , persistent-postgresql ==2.13.*
+    , persistent-template >=2.5 && <2.14
     , postgresql-simple
     , random
     , safe
@@ -81,6 +82,7 @@ library
     , template-haskell
     , text >=0.11 && <2.0
     , time
+    , transformers
     , unordered-containers
     , vector
     , wai
@@ -89,6 +91,7 @@ library
     , warp >=3.0 && <3.4
     , yaml ==0.11.*
     , yesod ==1.6.*
+    , yesod-auth ==1.6.*
     , yesod-core ==1.6.*
     , yesod-form >=1.6 && <1.8
     , yesod-static ==1.6.*
@@ -103,8 +106,6 @@ executable nk-boardle-yesod-exe
   main-is: main.hs
   other-modules:
       DevelMain
-      LoadDb
-      TestStuff
       Paths_nk_boardle_yesod
   autogen-modules:
       Paths_nk_boardle_yesod
@@ -136,6 +137,9 @@ executable nk-boardle-yesod-exe
     , monad-logger ==0.3.*
     , network
     , nk-boardle-yesod
+    , persistent >=2.9 && <2.14
+    , persistent-postgresql ==2.13.*
+    , persistent-template >=2.5 && <2.14
     , postgresql-simple
     , random
     , safe
@@ -143,6 +147,7 @@ executable nk-boardle-yesod-exe
     , template-haskell
     , text >=0.11 && <2.0
     , time
+    , transformers
     , unordered-containers
     , vector
     , wai
@@ -151,12 +156,86 @@ executable nk-boardle-yesod-exe
     , warp >=3.0 && <3.4
     , yaml ==0.11.*
     , yesod ==1.6.*
+    , yesod-auth ==1.6.*
     , yesod-core ==1.6.*
     , yesod-form >=1.6 && <1.8
     , yesod-static ==1.6.*
   default-language: Haskell2010
   if flag(library-only)
     buildable: False
+
+executable seed
+  main-is: seedPuzzles.hs
+  other-modules:
+      DevelMain
+      Application
+      Boardle.Boardle
+      Foundation
+      Handler.Comment
+      Handler.Common
+      Handler.Home
+      Handler.Puzzle
+      Import
+      Import.NoFoundation
+      Model
+      Settings
+      Settings.StaticFiles
+      Paths_nk_boardle_yesod
+  autogen-modules:
+      Paths_nk_boardle_yesod
+  hs-source-dirs:
+      app
+      src
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson >=1.4 && <2.1
+    , base >=4.9.1.0 && <5
+    , bytestring >=0.10 && <0.12
+    , case-insensitive
+    , cassava
+    , chessIO
+    , classy-prelude ==1.5.*
+    , classy-prelude-conduit ==1.5.*
+    , classy-prelude-yesod ==1.5.*
+    , conduit >=1.0 && <2.0
+    , containers
+    , data-default
+    , directory >=1.1 && <1.4
+    , fast-logger >=2.2 && <3.2
+    , file-embed
+    , foreign-store
+    , hjsmin >=0.1 && <0.3
+    , hspec
+    , http-client-tls ==0.3.*
+    , http-conduit ==2.3.*
+    , monad-control >=0.3 && <1.1
+    , monad-logger ==0.3.*
+    , network
+    , nk-boardle-yesod
+    , persistent >=2.9 && <2.14
+    , persistent-postgresql ==2.13.*
+    , persistent-template >=2.5 && <2.14
+    , postgresql-simple
+    , random
+    , safe
+    , shakespeare ==2.0.*
+    , template-haskell
+    , text >=0.11 && <2.0
+    , time
+    , transformers
+    , unordered-containers
+    , vector
+    , wai
+    , wai-extra >=3.0 && <3.2
+    , wai-logger >=2.2 && <2.5
+    , warp >=3.0 && <3.4
+    , yaml ==0.11.*
+    , yesod ==1.6.*
+    , yesod-auth ==1.6.*
+    , yesod-core ==1.6.*
+    , yesod-form >=1.6 && <1.8
+    , yesod-static ==1.6.*
+  default-language: Haskell2010
 
 test-suite boardle-test
   type: exitcode-stdio-1.0
@@ -196,6 +275,9 @@ test-suite boardle-test
     , monad-logger ==0.3.*
     , network
     , nk-boardle-yesod
+    , persistent >=2.9 && <2.14
+    , persistent-postgresql ==2.13.*
+    , persistent-template >=2.5 && <2.14
     , postgresql-simple
     , random
     , safe
@@ -203,6 +285,7 @@ test-suite boardle-test
     , template-haskell
     , text >=0.11 && <2.0
     , time
+    , transformers
     , unordered-containers
     , vector
     , wai
@@ -211,6 +294,7 @@ test-suite boardle-test
     , warp >=3.0 && <3.4
     , yaml ==0.11.*
     , yesod ==1.6.*
+    , yesod-auth ==1.6.*
     , yesod-core ==1.6.*
     , yesod-form >=1.6 && <1.8
     , yesod-static ==1.6.*
