@@ -1,16 +1,17 @@
 -- By default this file is used by `persistFileWith` in Model.hs (which is imported by Foundation.hs)
 -- Syntax for this file here: https://github.com/yesodweb/persistent/blob/master/docs/Persistent-entity-syntax.md
 
-Puzzle json
+Puzzle
     Id Text
     fen Text
     uciFirstMove Text
     uciSolution Text
-    uciSolutionSquares Int Maybe default=NULL -- Computed field based on uciSolution
+    -- Computed field based on uciSolution
+    uciSolutionSquares Int SqlType (SqlOther "INT GENERATED ALWAYS AS (array_length(regexp_split_to_array(uci_solution, ' '), 1)) STORED")
     rating Int
     ratingDeviation Int
     popularity Int
-    randomVal Double Maybe default=NULL -- Field to improve random selection performance
+    randomVal Double default=random() -- Field to improve random selection performance
     deriving Show
 
 Theme

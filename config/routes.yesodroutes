@@ -9,3 +9,7 @@
 / HomeR GET POST
 
 /comments CommentR POST
+
+/puzzle/#Text PuzzleIdR GET
+
+/new-puzzle/ RandomPuzzleR GET
