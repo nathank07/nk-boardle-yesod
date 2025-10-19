@@ -12,7 +12,7 @@ import Import
 import System.Random (randomRIO)
 import Model
 import Boardle.Boardle
-import qualified Database.Esqueleto as E 
+import qualified Database.Esqueleto.Experimental as E 
 
 getPuzzleIdR :: Text -> Handler Value
 getPuzzleIdR puzzleId = do
@@ -58,6 +58,16 @@ getRandomPuzzleR = do
     themes       <- fromMaybe ""   <$> runInputGet (iopt textField "themes")
     
     r <- liftIO (randomRIO (0.0, 1.0) :: IO Double)
+
+    themeIds <- runDB $ do
+        E.select $ do
+            t <- E.from $ E.table @Theme
+            E.where_ $ t E.^. ThemeName `E.in_` E.valList (words themes)
+            return (t E.^. ThemeId)
+
+    liftIO $ putStrLn ""
+    print themeIds
+    liftIO $ putStrLn ""
     
     mpuzzle <- runDB $ selectFirst 
         [ PuzzleRating >=. lowRating
